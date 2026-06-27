@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Clinic {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+
+  users           User[]
+  patients        Patient[]
+  services        Service[]
+  appointments    Appointment[]
+  packages        Package[]
+  patientPackages PatientPackage[]
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  STAFF
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  clinicId  Int
+  name      String
+  email     String
+  password  String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+
+  clinic       Clinic        @relation(fields: [clinicId], references: [id])
+  appointments Appointment[]
+
+  @@unique([clinicId, email])
+}
+
+model Patient {
+  id        Int       @id @default(autoincrement())
+  clinicId  Int
+  code      String
+  name      String
+  phone     String?
+  email     String?
+  birthdate DateTime?
+  gender    String?
+  allergies String?
+  note      String?
+  createdAt DateTime  @default(now())
+
+  clinic          Clinic           @relation(fields: [clinicId], references: [id])
+  appointments    Appointment[]
+  patientPackages PatientPackage[]
+  photos          PatientPhoto[]
+
+  @@unique([clinicId, code])
+}
+
+model PatientPhoto {
+  id        Int      @id @default(autoincrement())
+  patientId Int
+  url       String
+  label     String?
+  takenAt   DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  clinicId    Int
+  name        String
+  description String?
+  price       Float?
+  durationMin Int?
+  createdAt   DateTime @default(now())
+
+  clinic       Clinic        @relation(fields: [clinicId], references: [id])
+  appointments Appointment[]
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+  NO_SHOW
+}
+
+model Appointment {
+  id        Int               @id @default(autoincrement())
+  clinicId  Int
+  patientId Int
+  doctorId  Int?
+  serviceId Int?
+  startAt   DateTime
+  endAt     DateTime?
+  status    AppointmentStatus @default(PENDING)
+  note      String?
+  treatNote String?
+  createdAt DateTime          @default(now())
+
+  clinic    Clinic     @relation(fields: [clinicId], references: [id])
+  patient   Patient    @relation(fields: [patientId], references: [id])
+  doctor    User?      @relation(fields: [doctorId], references: [id])
+  service   Service?   @relation(fields: [serviceId], references: [id])
+  emailLogs EmailLog[]
+}
+
+model Package {
+  id           Int      @id @default(autoincrement())
+  clinicId     Int
+  name         String
+  description  String?
+  totalSession Int
+  price        Float
+  validDays    Int?
+  createdAt    DateTime @default(now())
+
+  clinic          Clinic           @relation(fields: [clinicId], references: [id])
+  patientPackages PatientPackage[]
+}
+
+model PatientPackage {
+  id            Int       @id @default(autoincrement())
+  clinicId      Int
+  patientId     Int
+  packageId     Int
+  sessionsTotal Int
+  sessionsUsed  Int       @default(0)
+  purchasedAt   DateTime  @default(now())
+  expiresAt     DateTime?
+
+  clinic   Clinic  @relation(fields: [clinicId], references: [id])
+  patient  Patient @relation(fields: [patientId], references: [id])
+  package  Package @relation(fields: [packageId], references: [id])
+  sessions PackageSession[]
+}
+
+model PackageSession {
+  id               Int      @id @default(autoincrement())
+  patientPackageId Int
+  usedAt           DateTime @default(now())
+  note             String?
+
+  patientPackage PatientPackage @relation(fields: [patientPackageId], references: [id])
+}
+
+model EmailLog {
+  id            Int      @id @default(autoincrement())
+  appointmentId Int
+  sentAt        DateTime @default(now())
+  toEmail       String
+  status        String
+  error         String?
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+}
