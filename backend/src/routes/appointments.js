@@ -23,7 +23,9 @@ router.get('/', auth, async (req, res) => {
     include: {
       patient: true,
       doctor: { select: { id: true, name: true } },
-      service: true
+      assistant: { select: { id: true, name: true } },
+      service: true,
+      room: true
     },
     orderBy: { startAt: 'asc' }
   })
@@ -41,7 +43,9 @@ router.get('/range', auth, async (req, res) => {
     include: {
       patient: true,
       doctor: { select: { id: true, name: true } },
-      service: true
+      assistant: { select: { id: true, name: true } },
+      service: true,
+      room: true
     },
     orderBy: { startAt: 'asc' }
   })
@@ -52,7 +56,7 @@ router.get('/range', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   const appt = await prisma.appointment.findFirst({
     where: { id: +req.params.id, clinicId: req.user.clinicId },
-    include: { patient: true, doctor: true, service: true }
+    include: { patient: true, doctor: true, assistant: true, service: true, room: true, usages: true }
   })
   if (!appt) return res.status(404).json({ error: 'Not found' })
   res.json(appt)
@@ -60,18 +64,20 @@ router.get('/:id', auth, async (req, res) => {
 
 // POST /api/appointments
 router.post('/', auth, async (req, res) => {
-  const { patientId, doctorId, serviceId, startAt, endAt, note } = req.body
+  const { patientId, doctorId, assistantId, serviceId, roomId, startAt, endAt, note } = req.body
   const appt = await prisma.appointment.create({
     data: {
       clinicId: req.user.clinicId,
       patientId: +patientId,
       doctorId: doctorId ? +doctorId : null,
+      assistantId: assistantId ? +assistantId : null,
       serviceId: serviceId ? +serviceId : null,
+      roomId: roomId ? +roomId : null,
       startAt: new Date(startAt),
       endAt: endAt ? new Date(endAt) : null,
       note
     },
-    include: { patient: true, service: true }
+    include: { patient: true, service: true, room: true }
   })
   res.json(appt)
 })
@@ -82,6 +88,8 @@ router.put('/:id', auth, async (req, res) => {
     where: { id: +req.params.id, clinicId: req.user.clinicId },
     data: {
       doctorId: req.body.doctorId ? +req.body.doctorId : undefined,
+      assistantId: req.body.assistantId ? +req.body.assistantId : undefined,
+      roomId: req.body.roomId ? +req.body.roomId : undefined,
       serviceId: req.body.serviceId ? +req.body.serviceId : undefined,
       startAt: req.body.startAt ? new Date(req.body.startAt) : undefined,
       endAt: req.body.endAt ? new Date(req.body.endAt) : undefined,

@@ -1,12 +1,17 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { logout, getClinic, getUser } from '../lib/auth'
-import { Calendar, Users, Package, LayoutDashboard, Settings, LogOut } from 'lucide-react'
+import { Calendar, Users, Package, LayoutDashboard, Settings, LogOut, DoorOpen, Stethoscope, ShoppingBag, Boxes, Shield } from 'lucide-react'
 
 const navItems = [
+  { to: '/admin', icon: Shield, label: 'ผู้ดูแล', adminOnly: true },
   { to: '/dashboard', icon: LayoutDashboard, label: 'ภาพรวม' },
   { to: '/appointments', icon: Calendar, label: 'นัดหมาย' },
   { to: '/patients', icon: Users, label: 'คนไข้' },
+  { to: '/team', icon: Stethoscope, label: 'บุคลากร' },
+  { to: '/rooms', icon: DoorOpen, label: 'ห้องบริการ' },
   { to: '/packages', icon: Package, label: 'คอร์ส/แพ็กเกจ' },
+  { to: '/products', icon: ShoppingBag, label: 'สินค้า' },
+  { to: '/materials', icon: Boxes, label: 'วัสดุ' },
   { to: '/settings', icon: Settings, label: 'ตั้งค่า' },
 ]
 
@@ -30,7 +35,7 @@ export default function Layout({ children }) {
         </div>
 
         <nav className="flex-1 py-4 space-y-1 px-2">
-          {navItems.map(({ to, icon: Icon, label }) => (
+          {navItems.filter(i => !i.adminOnly || user?.role === 'ADMIN').map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}

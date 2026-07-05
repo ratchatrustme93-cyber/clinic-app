@@ -9,6 +9,11 @@ import Patients from './pages/Patients'
 import PatientDetail from './pages/PatientDetail'
 import Packages from './pages/Packages'
 import Settings from './pages/Settings'
+import Team from './pages/Team'
+import Admin from './pages/Admin'
+import Rooms from './pages/Rooms'
+import Products from './pages/Products'
+import Materials from './pages/Materials'
 
 function PrivateRoute({ children }) {
   return isLoggedIn() ? children : <Navigate to="/login" />
@@ -29,6 +34,11 @@ export default function App() {
                 <Route path="/appointments" element={<Appointments />} />
                 <Route path="/patients" element={<Patients />} />
                 <Route path="/patients/:id" element={<PatientDetail />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/team" element={<Team />} />
+                <Route path="/rooms" element={<Rooms />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/materials" element={<Materials />} />
                 <Route path="/packages" element={<Packages />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>

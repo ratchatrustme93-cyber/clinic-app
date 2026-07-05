@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
-import { ArrowLeft, Calendar, Package, Plus, Pencil, X } from 'lucide-react'
+import { ArrowLeft, Calendar, Package, Plus, Pencil, X, Boxes } from 'lucide-react'
 import api from '../lib/api'
 
 const STATUS_LABEL = {
@@ -21,6 +21,7 @@ export default function PatientDetail() {
   const { id } = useParams()
   const nav = useNavigate()
   const [patient, setPatient] = useState(null)
+  const [usages, setUsages] = useState([])
   const [allPackages, setAllPackages] = useState([])
   const [showBuyPkg, setShowBuyPkg] = useState(false)
   const [buyPkgId, setBuyPkgId] = useState('')
@@ -34,6 +35,7 @@ export default function PatientDetail() {
 
   useEffect(() => {
     fetchPatient()
+    api.get(`/usages?patientId=${id}`).then(r => setUsages(r.data))
     api.get('/packages').then(r => setAllPackages(r.data))
   }, [id])
 
@@ -172,6 +174,28 @@ export default function PatientDetail() {
                   <span className="text-xs text-gray-400">{STATUS_LABEL[a.status]}</span>
                 </div>
                 {a.treatNote && <p className="text-xs text-gray-400 mt-1">{a.treatNote}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Items used */}
+      <div className="mt-4">
+        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2"><Boxes size={14} />รายการที่ใช้</h3>
+        {usages.length === 0 ? (
+          <p className="text-xs text-gray-400 py-2">ยังไม่มีรายการ</p>
+        ) : (
+          <div className="space-y-2">
+            {usages.map(u => (
+              <div key={u.id} className="bg-white rounded-xl p-3 border border-gray-100 text-sm flex items-center justify-between">
+                <div>
+                  <p className="text-gray-800">{u.name} <span className="text-gray-400">× {u.qty}</span></p>
+                  <p className="text-xs text-gray-400">
+                    {u.itemType === 'PRODUCT' ? 'สินค้า' : 'วัสดุ'} · {format(new Date(u.usedAt), 'd MMM yyyy', { locale: th })}
+                    {u.note ? ` · ${u.note}` : ''}
+                  </p>
+                </div>
               </div>
             ))}
           </div>

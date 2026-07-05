@@ -20,11 +20,16 @@ model Clinic {
   appointments    Appointment[]
   packages        Package[]
   patientPackages PatientPackage[]
+  rooms           Room[]
+  products        Product[]
+  materials       Material[]
+  usages          TreatmentUsage[]
 }
 
 enum Role {
   ADMIN
   DOCTOR
+  ASSISTANT
   STAFF
 }
 
@@ -35,10 +40,16 @@ model User {
   email     String
   password  String
   role      Role     @default(STAFF)
+  phone     String?
+  position  String?
+  specialty String?
+  licenseNo String?
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  clinic       Clinic        @relation(fields: [clinicId], references: [id])
-  appointments Appointment[]
+  clinic                Clinic        @relation(fields: [clinicId], references: [id])
+  doctorAppointments    Appointment[] @relation("ApptDoctor")
+  assistantAppointments Appointment[] @relation("ApptAssistant")
 
   @@unique([clinicId, email])
 }
@@ -60,6 +71,7 @@ model Patient {
   appointments    Appointment[]
   patientPackages PatientPackage[]
   photos          PatientPhoto[]
+  usages          TreatmentUsage[]
 
   @@unique([clinicId, code])
 }
@@ -87,6 +99,19 @@ model Service {
   appointments Appointment[]
 }
 
+model Room {
+  id        Int      @id @default(autoincrement())
+  clinicId  Int
+  name      String
+  type      String?
+  note      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  clinic       Clinic        @relation(fields: [clinicId], references: [id])
+  appointments Appointment[]
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -97,23 +122,28 @@ enum AppointmentStatus {
 }
 
 model Appointment {
-  id        Int               @id @default(autoincrement())
-  clinicId  Int
-  patientId Int
-  doctorId  Int?
-  serviceId Int?
-  startAt   DateTime
-  endAt     DateTime?
-  status    AppointmentStatus @default(PENDING)
-  note      String?
-  treatNote String?
-  createdAt DateTime          @default(now())
+  id          Int               @id @default(autoincrement())
+  clinicId    Int
+  patientId   Int
+  doctorId    Int?
+  assistantId Int?
+  serviceId   Int?
+  roomId      Int?
+  startAt     DateTime
+  endAt       DateTime?
+  status      AppointmentStatus @default(PENDING)
+  note        String?
+  treatNote   String?
+  createdAt   DateTime          @default(now())
 
-  clinic    Clinic     @relation(fields: [clinicId], references: [id])
-  patient   Patient    @relation(fields: [patientId], references: [id])
-  doctor    User?      @relation(fields: [doctorId], references: [id])
-  service   Service?   @relation(fields: [serviceId], references: [id])
+  clinic    Clinic           @relation(fields: [clinicId], references: [id])
+  patient   Patient          @relation(fields: [patientId], references: [id])
+  doctor    User?            @relation("ApptDoctor", fields: [doctorId], references: [id])
+  assistant User?            @relation("ApptAssistant", fields: [assistantId], references: [id])
+  service   Service?         @relation(fields: [serviceId], references: [id])
+  room      Room?            @relation(fields: [roomId], references: [id])
   emailLogs EmailLog[]
+  usages    TreatmentUsage[]
 }
 
 model Package {
@@ -140,9 +170,9 @@ model PatientPackage {
   purchasedAt   DateTime  @default(now())
   expiresAt     DateTime?
 
-  clinic   Clinic  @relation(fields: [clinicId], references: [id])
-  patient  Patient @relation(fields: [patientId], references: [id])
-  package  Package @relation(fields: [packageId], references: [id])
+  clinic   Clinic           @relation(fields: [clinicId], references: [id])
+  patient  Patient          @relation(fields: [patientId], references: [id])
+  package  Package          @relation(fields: [packageId], references: [id])
   sessions PackageSession[]
 }
 
@@ -153,6 +183,68 @@ model PackageSession {
   note             String?
 
   patientPackage PatientPackage @relation(fields: [patientPackageId], references: [id])
+}
+
+// รายการสินค้าขายหน้าร้าน (retail products)
+model Product {
+  id        Int      @id @default(autoincrement())
+  clinicId  Int
+  name      String
+  sku       String?
+  category  String?
+  unit      String?
+  price     Float?
+  cost      Float?
+  stockQty  Int      @default(0)
+  note      String?
+  createdAt DateTime @default(now())
+
+  clinic Clinic           @relation(fields: [clinicId], references: [id])
+  usages TreatmentUsage[]
+}
+
+// วัสดุสิ้นเปลืองที่ใช้ในการรักษา (consumable materials)
+model Material {
+  id           Int      @id @default(autoincrement())
+  clinicId     Int
+  name         String
+  sku          String?
+  unit         String?
+  cost         Float?
+  stockQty     Int      @default(0)
+  reorderLevel Int?
+  note         String?
+  createdAt    DateTime @default(now())
+
+  clinic Clinic           @relation(fields: [clinicId], references: [id])
+  usages TreatmentUsage[]
+}
+
+enum UsageType {
+  PRODUCT
+  MATERIAL
+}
+
+// รายการสินค้า/วัสดุที่ใช้กับคนไข้ในแต่ละนัด
+model TreatmentUsage {
+  id            Int       @id @default(autoincrement())
+  clinicId      Int
+  appointmentId Int
+  patientId     Int
+  itemType      UsageType
+  productId     Int?
+  materialId    Int?
+  name          String
+  qty           Int       @default(1)
+  unitCost      Float?
+  note          String?
+  usedAt        DateTime  @default(now())
+
+  clinic      Clinic      @relation(fields: [clinicId], references: [id])
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  patient     Patient     @relation(fields: [patientId], references: [id])
+  product     Product?    @relation(fields: [productId], references: [id])
+  material    Material?   @relation(fields: [materialId], references: [id])
 }
 
 model EmailLog {
